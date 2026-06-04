@@ -351,19 +351,7 @@ def androlyze_main(session: Session, filename: str) -> None:
 
     def shutdown_hook() -> None:
         """Save the session on exit, if wanted"""
-        if not s.isOpen():
-            return
-
-        try:
-            res = input("Do you want to save the session? (y/[n])?").lower()
-        except (EOFError, KeyboardInterrupt):
-            pass
-        else:
-            if res == "y":
-                # TODO: if we already started from a session, probably we want to save it under the same name...
-                # TODO: be able to take any filename you want
-                fname = s.save()
-                print("Saved Session to file: '{}'".format(fname))
+        pass
 
     cfg = Config()
     _version_string = "Androguard version {}".format(ANDROGUARD_VERSION)
@@ -583,12 +571,6 @@ def androtrace_main(
 
         ui = DynamicUI(p.message_queue)
 
-        def inputhook(inputhook_context: InputHookContext):
-            while not inputhook_context.input_is_ready():
-                if ui.process_data():
-                    get_app().invalidate()
-                else:
-                    time.sleep(0.1)
 
         set_eventloop_with_inputhook(inputhook=inputhook)
 

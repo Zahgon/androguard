@@ -59,8 +59,6 @@ class Writer:
     def __str__(self):
         return ''.join([str(i) for i in self.buffer])
 
-    def str_ext(self) -> list[tuple]:
-        return self.buffer2
 
     def inc_ind(self, i=1):
         self.ind += 4 * i

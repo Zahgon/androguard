@@ -172,122 +172,7 @@ def arsc(
 
         >>> androguard arsc app.apk
     """
-
-    from androguard.core import androconf, apk, axml
-
-    if file_ and input_:
-        logger.info(
-            "Can not give --input and positional argument! Please use only one of them!"
-        )
-        sys.exit(1)
-
-    if not input_ and not file_:
-        logger.info("Give one file to decode!")
-        sys.exit(1)
-
-    if input_:
-        fname = input_
-    else:
-        fname = file_
-
-    ret_type = androconf.is_android(fname)
-    if ret_type == "APK":
-        a = apk.APK(fname)
-        arscobj = a.get_android_resources()
-        if not arscobj:
-            logger.error("The APK does not contain a resources file!")
-            sys.exit(0)
-    elif ret_type == "ARSC":
-        with open(fname, 'rb') as fp:
-            arscobj = axml.ARSCParser(fp.read())
-            if not arscobj:
-                logger.error("The resources file seems to be invalid!")
-                sys.exit(1)
-    else:
-        logger.error("Unknown file type!")
-        sys.exit(1)
-
-    if id_:
-        # Strip the @, if any
-        if id_[0] == "@":
-            id_ = id_[1:]
-        try:
-            i_id = int(id_, 16)
-        except ValueError:
-            print(
-                "ID '{}' could not be parsed! have you supplied the correct hex ID?".format(
-                    id_
-                )
-            )
-            sys.exit(1)
-
-        name = arscobj.get_resource_xml_name(i_id)
-        if not name:
-            print("Specified resource was not found!")
-            sys.exit(1)
-
-        print("@{:08x} resolves to '{}'".format(i_id, name))
-        print()
-
-        # All the information is in the config.
-        # we simply need to get the actual value of the entry
-        for config, entry in arscobj.get_resolved_res_configs(i_id):
-            print(
-                "{} = '{}'".format(
-                    (
-                        config.get_qualifier()
-                        if not config.is_default()
-                        else "<default>"
-                    ),
-                    entry,
-                )
-            )
-
-        sys.exit(0)
-
-    if list_packages:
-        print("\n".join(arscobj.get_packages_names()))
-        sys.exit(0)
-
-    if list_locales:
-        for p in arscobj.get_packages_names():
-            print("In Package:", p)
-            print(
-                "\n".join(
-                    map(
-                        lambda x: (
-                            "  \\x00\\x00"
-                            if x == "\x00\x00"
-                            else "  {}".format(x)
-                        ),
-                        sorted(arscobj.get_locales(p)),
-                    )
-                )
-            )
-        sys.exit(0)
-
-    if list_types:
-        for p in arscobj.get_packages_names():
-            print("In Package:", p)
-            for locale in sorted(arscobj.get_locales(p)):
-                print(
-                    "  In Locale: {}".format(
-                        "\\x00\\x00" if locale == "\x00\x00" else locale
-                    )
-                )
-                print(
-                    "\n".join(
-                        map(
-                            "    {}".format,
-                            sorted(arscobj.get_types(p, locale)),
-                        )
-                    )
-                )
-        sys.exit(0)
-
-    androarsc_main(
-        arscobj, outp=output, package=package, typ=type_, locale=locale
-    )
+    pass
 
 
 @entry_point.command()
@@ -402,7 +287,7 @@ def decompile(input_, file_, output, format_, jar, limit, decompiler):
 )
 def sign(hash_, print_all_hashes, show, apk):
     """Return the fingerprint(s) of all certificates inside an APK."""
-    androsign_main(apk, hash_, print_all_hashes, show)
+    pass
 
 
 @entry_point.command()
@@ -416,14 +301,7 @@ def apkid(apks: list[str]):
     
     :param apks: list of apk filepaths
     """
-    from androguard.core.apk import get_apkid
-
-    logger.debug("APKID")
-
-    results = dict()
-    for apk in apks:
-        results[apk] = get_apkid(apk)
-    print(json.dumps(results, indent=2))
+    pass
 
 
 @entry_point.command()
@@ -444,7 +322,7 @@ def analyze(session: str, apk: str):
     :param session: session file to restore
     :param apk: apk filename to analyze, if session not set
     """
-    androlyze_main(session, apk)
+    pass
 
 
 @entry_point.command()
@@ -502,7 +380,7 @@ def trace(apk, modules, enable_ui):
         >>> androguard trace test.APK -m "ipc/*"  -m "webviews/*" -m "modules/**"
         >>> androguard trace test.APK -m "ipc/*"  -m "webviews/*" -m "modules/**" --enable-ui
     """
-    androtrace_main(apk, modules, False, enable_ui)
+    pass
 
 
 @entry_point.command()
@@ -526,7 +404,7 @@ def dtrace(package_name, modules):
 
         >>> androguard dtrace package_name -m "ipc/*"  -m "webviews/*" -m "modules/**"
     """
-    androtrace_main(package_name, modules, True)
+    pass
 
 
 @entry_point.command()
@@ -556,23 +434,17 @@ def dump(package_name, modules):
 # callgraph exporting utility functions
 def _write_gml(G, path):
     """Wrapper around nx.write_gml"""
-    return nx.write_gml(G, path, stringizer=str)
+    pass
 
 
 def _write_gpickle(G, path):
     """Wrapper around pickle dump"""
-    import pickle
-
-    with open(path, 'wb') as f:
-        pickle.dump(G, f, pickle.HIGHEST_PROTOCOL)
+    pass
 
 
 def _write_yaml(G, path):
     """Wrapper around yaml dump"""
-    import yaml
-
-    with open(path, 'w') as f:
-        yaml.dump(G, f)
+    pass
 
 
 # mapping of types to their respective exporting functions
@@ -651,82 +523,7 @@ def cg(
     """
     Create a call graph based on the data of Analysis and export it into a graph format.
     """
-    from androguard.core.analysis.analysis import ExternalMethod
-    from androguard.core.bytecode import FormatClassToJava
-    from androguard.misc import AnalyzeAPK
-
-    a, d, dx = AnalyzeAPK(file_)
-
-    entry_points = map(
-        FormatClassToJava,
-        a.get_activities()
-        + a.get_providers()
-        + a.get_services()
-        + a.get_receivers(),
-    )
-    entry_points = list(entry_points)
-
-    callgraph = dx.get_call_graph(
-        classname,
-        methodname,
-        descriptor,
-        accessflag,
-        no_isolated,
-        entry_points,
-    )
-
-    if show:
-        try:
-            import PyQt5
-            import matplotlib.pyplot as plt
-
-        except ImportError:
-            print(
-                "PyQt5 or matplotlib is not installed. In most OS you can install it by running 'pip install PyQt5 matplotlib'.\n"
-            )
-            exit()
-        pos = nx.spring_layout(callgraph)
-        internal = []
-        external = []
-
-        for n in callgraph:
-            if isinstance(n, ExternalMethod):
-                external.append(n)
-            else:
-                internal.append(n)
-
-        nx.draw_networkx_nodes(
-            callgraph, pos=pos, node_color='r', nodelist=internal
-        )
-
-        nx.draw_networkx_nodes(
-            callgraph, pos=pos, node_color='b', nodelist=external
-        )
-
-        nx.draw_networkx_edges(callgraph, pos, width=0.5, arrows=True)
-
-        nx.draw_networkx_labels(
-            callgraph,
-            pos=pos,
-            font_size=6,
-            labels={
-                n: f"{n.get_class_name()} {n.name} {n.descriptor}"
-                for n in callgraph.nodes
-            },
-        )
-
-        plt.draw()
-        plt.show()
-
-    else:
-        output_type_lower = output_type.lower()
-        if output_type_lower not in write_methods:
-            print(
-                f"Could not find a method to export files to {output_type_lower}!"
-            )
-            sys.exit(1)
-
-        write_methods[output_type_lower](callgraph, output)
+    pass
 
 
 if __name__ == '__main__':

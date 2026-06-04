@@ -57,48 +57,10 @@ def _Print(name, arg):
     print(buff)
 
 
-def PrettyShowEx(exceptions):
-    if len(exceptions) > 0:
-        CONF["PRINT_FCT"]("Exceptions:\n")
-        for i in exceptions:
-            CONF["PRINT_FCT"](
-                "\t%s%s%s\n"
-                % (
-                    CONF["COLORS"]["EXCEPTION"],
-                    i.show_buff(),
-                    CONF["COLORS"]["NORMAL"],
-                )
-            )
 
 
-def _PrintXRef(tag, items):
-    print_fct = CONF["PRINT_FCT"]
-    for i in items:
-        print_fct(
-            "%s: %s %s %s %s\n"
-            % (
-                tag,
-                i[0].get_class_name(),
-                i[0].get_name(),
-                i[0].get_descriptor(),
-                ' '.join("%x" % j.get_idx() for j in i[1]),
-            )
-        )
 
 
-def _PrintDRef(tag, items):
-    print_fct = CONF["PRINT_FCT"]
-    for i in items:
-        print_fct(
-            "%s: %s %s %s %s\n"
-            % (
-                tag,
-                i[0].get_class_name(),
-                i[0].get_name(),
-                i[0].get_descriptor(),
-                ' '.join("%x" % j for j in i[1]),
-            )
-        )
 
 
 def _PrintDefault(msg):
@@ -662,11 +624,7 @@ def method2png(
     :param mx: specify the `MethodAnalysis` object
     :param raw: use directly a dot raw buffer
     """
-    buff = raw
-    if not raw:
-        buff = method2dot(mx)
-
-    method2format(output, "png", mx, buff)
+    pass
 
 
 def method2jpg(
@@ -679,11 +637,7 @@ def method2jpg(
     :param mx: specify the `MethodAnalysis` object
     :param raw: use directly a dot raw buffer (optional)
     """
-    buff = raw
-    if not raw:
-        buff = method2dot(mx)
-
-    method2format(output, "jpg", mx, buff)
+    pass
 
 
 def vm2json(vm: DEX) -> str:
@@ -693,19 +647,7 @@ def vm2json(vm: DEX) -> str:
     :param vm: `androguard.core.dex.DEX` object
     :returns: str
     """
-    d = {"name": "root", "children": []}
-
-    for _class in vm.get_classes():
-        c_class = {"name": _class.get_name(), "children": []}
-
-        for method in _class.get_methods():
-            c_method = {"name": method.get_name(), "children": []}
-
-            c_class["children"].append(c_method)
-
-        d["children"].append(c_class)
-
-    return json.dumps(d)
+    pass
 
 
 class TmpBlock:
@@ -724,9 +666,7 @@ def method2json(mx: MethodAnalysis, directed_graph: bool = False) -> str:
     :param directed_graph: `True` if a directed graph should be created (default: `False`)
     :returns: json str
     """
-    if directed_graph:
-        return method2json_direct(mx)
-    return method2json_undirect(mx)
+    pass
 
 
 def method2json_undirect(mx: MethodAnalysis) -> str:
@@ -736,39 +676,7 @@ def method2json_undirect(mx: MethodAnalysis) -> str:
     :param mx: `androguard.core.analysis.analysis.MethodAnalysis`
     :return: json str
     """
-    d = {}
-    reports = []
-    d["reports"] = reports
-
-    for DVMBasicMethodBlock in mx.basic_blocks.gets():
-        cblock = {
-            "BasicBlockId": DVMBasicMethodBlock.get_name(),
-            "registers": mx.get_method().get_code().get_registers_size(),
-            "instructions": [],
-        }
-
-        ins_idx = DVMBasicMethodBlock.start
-        for (
-            DVMBasicMethodBlockInstruction
-        ) in DVMBasicMethodBlock.get_instructions():
-            c_ins = {
-                "idx": ins_idx,
-                "name": DVMBasicMethodBlockInstruction.get_name(),
-                "operands": DVMBasicMethodBlockInstruction.get_operands(
-                    ins_idx
-                ),
-            }
-
-            cblock["instructions"].append(c_ins)
-            ins_idx += DVMBasicMethodBlockInstruction.get_length()
-
-        cblock["Edge"] = []
-        for DVMBasicMethodBlockChild in DVMBasicMethodBlock.childs:
-            cblock["Edge"].append(DVMBasicMethodBlockChild[-1].get_name())
-
-        reports.append(cblock)
-
-    return json.dumps(d)
+    pass
 
 
 def method2json_direct(mx: MethodAnalysis) -> str:
@@ -778,117 +686,7 @@ def method2json_direct(mx: MethodAnalysis) -> str:
     :param mx: `androguard.core.analysis.analysis.MethodAnalysis`
     :returns: the method json string
     """
-    d = {}
-    reports = []
-    d["reports"] = reports
-
-    hooks = {}
-
-    l = []
-    for DVMBasicMethodBlock in mx.basic_blocks.gets():
-        for index, DVMBasicMethodBlockChild in enumerate(
-            DVMBasicMethodBlock.childs
-        ):
-            if (
-                DVMBasicMethodBlock.get_name()
-                == DVMBasicMethodBlockChild[-1].get_name()
-            ):
-
-                preblock = TmpBlock(DVMBasicMethodBlock.get_name() + "-pre")
-
-                cnblock = {
-                    "BasicBlockId": DVMBasicMethodBlock.get_name() + "-pre",
-                    "start": DVMBasicMethodBlock.start,
-                    "notes": [],
-                    "Edge": [DVMBasicMethodBlock.get_name()],
-                    "registers": 0,
-                    "instructions": [],
-                    "info_bb": 0,
-                }
-
-                l.append(cnblock)
-
-                for parent in DVMBasicMethodBlock.fathers:
-                    hooks[parent[-1].get_name()] = []
-                    hooks[parent[-1].get_name()].append(preblock)
-
-                    for idx, child in enumerate(parent[-1].childs):
-                        if (
-                            child[-1].get_name()
-                            == DVMBasicMethodBlock.get_name()
-                        ):
-                            hooks[parent[-1].get_name()].append(child[-1])
-
-    for DVMBasicMethodBlock in mx.basic_blocks.gets():
-        cblock = {
-            "BasicBlockId": DVMBasicMethodBlock.get_name(),
-            "start": DVMBasicMethodBlock.start,
-            "notes": DVMBasicMethodBlock.get_notes(),
-            "registers": mx.get_method().get_code().get_registers_size(),
-            "instructions": [],
-        }
-
-        ins_idx = DVMBasicMethodBlock.start
-        last_instru = None
-        for (
-            DVMBasicMethodBlockInstruction
-        ) in DVMBasicMethodBlock.get_instructions():
-            c_ins = {
-                "idx": ins_idx,
-                "name": DVMBasicMethodBlockInstruction.get_name(),
-                "operands": DVMBasicMethodBlockInstruction.get_operands(
-                    ins_idx
-                ),
-            }
-
-            cblock["instructions"].append(c_ins)
-
-            if (
-                DVMBasicMethodBlockInstruction.get_op_value() == 0x2B
-                or DVMBasicMethodBlockInstruction.get_op_value() == 0x2C
-            ):
-                values = DVMBasicMethodBlock.get_special_ins(ins_idx)
-                cblock["info_next"] = values.get_values()
-
-            ins_idx += DVMBasicMethodBlockInstruction.get_length()
-            last_instru = DVMBasicMethodBlockInstruction
-
-        cblock["info_bb"] = 0
-        if DVMBasicMethodBlock.childs:
-            if len(DVMBasicMethodBlock.childs) > 1:
-                cblock["info_bb"] = 1
-
-            if (
-                last_instru.get_op_value() == 0x2B
-                or last_instru.get_op_value() == 0x2C
-            ):
-                cblock["info_bb"] = 2
-
-        cblock["Edge"] = []
-        for DVMBasicMethodBlockChild in DVMBasicMethodBlock.childs:
-            ok = False
-            if DVMBasicMethodBlock.get_name() in hooks:
-                if (
-                    DVMBasicMethodBlockChild[-1]
-                    in hooks[DVMBasicMethodBlock.get_name()]
-                ):
-                    ok = True
-                    cblock["Edge"].append(
-                        hooks[DVMBasicMethodBlock.get_name()][0].get_name()
-                    )
-
-            if not ok:
-                cblock["Edge"].append(DVMBasicMethodBlockChild[-1].get_name())
-
-        exception_analysis = DVMBasicMethodBlock.get_exception_analysis()
-        if exception_analysis:
-            cblock["Exceptions"] = exception_analysis.get()
-
-        reports.append(cblock)
-
-    reports.extend(l)
-
-    return json.dumps(d)
+    pass
 
 
 def object_to_bytes(obj: Union[str, bool, int, bytearray]) -> bytearray:
@@ -925,7 +723,7 @@ def FormatClassToJava(i: str) -> str:
     :param i: the input class name
     :returns: the formatted string
     """
-    return "L" + i.replace(".", "/") + ";"
+    pass
 
 
 def FormatClassToPython(i: str) -> str:
@@ -968,29 +766,7 @@ def get_package_class_name(name: str) -> tuple[str, str]:
     :param name: the name
     :returns: the formatted package class name
     """
-    # name is MUTF8, so make sure we get the string variant
-    name = str(name)
-    if name[-1] != ';':
-        raise ValueError(
-            "The name '{}' does not look like a typed name!".format(name)
-        )
-
-    # discard array types, there might be many...
-    name = name.lstrip('[')
-
-    if name[0] != 'L':
-        raise ValueError(
-            "The name '{}' does not look like a typed name!".format(name)
-        )
-
-    name = name[1:-1]
-    if '/' not in name:
-        return '', name
-
-    package, clsname = name.rsplit('/', 1)
-    package = package.replace('/', '.')
-
-    return package, clsname
+    pass
 
 
 def FormatNameToPython(i: str) -> str:

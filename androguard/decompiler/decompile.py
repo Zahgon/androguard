@@ -237,18 +237,12 @@ class DvMethod:
         """
         return self.ast
 
-    def show_source(self) -> None:
-        print(self.get_source())
 
     def get_source(self) -> str:
         if self.writer:
             return str(self.writer)
         return ''
 
-    def get_source_ext(self) -> list[tuple]:
-        if self.writer:
-            return self.writer.str_ext()
-        return []
 
     def __repr__(self):
         # return 'Method %s' % self.name
@@ -399,110 +393,7 @@ class DvClass:
         source.append('}\n')
         return ''.join(source)
 
-    def get_source_ext(self) -> list[tuple[str, list]]:
-        source = []
-        if not self.inner and self.package:
-            source.append(
-                (
-                    'PACKAGE',
-                    [
-                        ('PACKAGE_START', 'package '),
-                        ('NAME_PACKAGE', '%s' % self.package),
-                        ('PACKAGE_END', ';\n'),
-                    ],
-                )
-            )
-        list_proto = [
-            ('PROTOTYPE_ACCESS', '%s class ' % ' '.join(self.access)),
-            ('NAME_PROTOTYPE', '%s' % self.name, self.package),
-        ]
-        superclass = self.superclass
-        if superclass is not None and superclass != 'Ljava/lang/Object;':
-            superclass = superclass[1:-1].replace('/', '.')
-            list_proto.append(('EXTEND', ' extends '))
-            list_proto.append(('NAME_SUPERCLASS', '%s' % superclass))
 
-        if len(self.interfaces) > 0:
-            list_proto.append(('IMPLEMENTS', ' implements '))
-            for i, interface in enumerate(self.interfaces):
-                if i != 0:
-                    list_proto.append(('COMMA', ', '))
-                list_proto.append(
-                    ('NAME_INTERFACE', interface[1:-1].replace('/', '.'))
-                )
-        list_proto.append(('PROTOTYPE_END', ' {\n'))
-        source.append(("PROTOTYPE", list_proto))
-
-        for field in self.fields:
-            field_access_flags = field.get_access_flags()
-            access = [
-                util.ACCESS_FLAGS_FIELDS[flag]
-                for flag in util.ACCESS_FLAGS_FIELDS
-                if flag & field_access_flags
-            ]
-            f_type = util.get_type(field.get_descriptor())
-            name = field.get_name()
-            if access:
-                access_str = '    %s ' % ' '.join(access)
-            else:
-                access_str = '    '
-
-            value = None
-            init_value = field.get_init_value()
-            if init_value:
-                value = init_value.value
-                if f_type == 'String':
-                    if value:
-                        value = ' = "%s"' % value.encode(
-                            "unicode-escape"
-                        ).decode("ascii")
-                    else:
-                        # FIXME we can not check if this value here is null or ""
-                        # In both cases we end up here...
-                        value = ' = ""'
-                elif field.proto == 'B':
-                    # a byte
-                    value = ' = %s' % hex(
-                        struct.unpack("b", struct.pack("B", value))[0]
-                    )
-                else:
-                    value = ' = %s' % str(value)
-            if value:
-                source.append(
-                    (
-                        'FIELD',
-                        [
-                            ('FIELD_ACCESS', access_str),
-                            ('FIELD_TYPE', '%s' % f_type),
-                            ('SPACE', ' '),
-                            ('NAME_FIELD', '%s' % name, f_type, field),
-                            ('FIELD_VALUE', value),
-                            ('FIELD_END', ';\n'),
-                        ],
-                    )
-                )
-            else:
-                source.append(
-                    (
-                        'FIELD',
-                        [
-                            ('FIELD_ACCESS', access_str),
-                            ('FIELD_TYPE', '%s' % f_type),
-                            ('SPACE', ' '),
-                            ('NAME_FIELD', '%s' % name, f_type, field),
-                            ('FIELD_END', ';\n'),
-                        ],
-                    )
-                )
-
-        for method in self.methods:
-            if isinstance(method, DvMethod):
-                source.append(("METHOD", method.get_source_ext()))
-        source.append(("CLASS_END", [('CLASS_END', '}\n')]))
-        return source
-
-    def show_source(self) -> None:
-        print(self.get_source())
 
     def __repr__(self):
         return '<Class(%s)>' % self.name
@@ -595,19 +486,13 @@ class DvMachine:
 
         This calls :meth:`~androgaurd.decompiler.decompile.DvClass.show_source` on each :class:`DvClass`.
         """
-        for klass in self.classes.values():
-            klass.show_source()
+        pass
 
     def process_and_show(self) -> None:
         """
         Run :meth:`process` and :meth:`show_source` after each other.
         """
-        for name, klass in sorted(self.classes.items()):
-            logger.debug('Processing class: %s', name)
-            if not isinstance(klass, DvClass):
-                klass = DvClass(klass, self.vma)
-            klass.process()
-            klass.show_source()
+        pass
 
     def get_ast(self) -> dict:
         """

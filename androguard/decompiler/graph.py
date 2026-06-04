@@ -446,8 +446,6 @@ class GenInvokeRetName:
         self.ret = Variable('tmp%d' % self.num)
         return self.ret
 
-    def set_to(self, ret):
-        self.ret = ret
 
     def last(self):
         return self.ret

@@ -90,17 +90,6 @@ class Exceptions:
         for i in exceptions:
             self.exceptions.append(ExceptionAnalysis(i, basic_blocks))
 
-    def get_exception(
-        self, addr_start: int, addr_end: int
-    ) -> Union[ExceptionAnalysis, None]:
-        for i in self.exceptions:
-            if i.start >= addr_start and i.end <= addr_end:
-                return i
-
-            elif addr_end <= i.end and addr_start >= i.start:
-                return i
-
-        return None
 
     def gets(self) -> list[ExceptionAnalysis]:
         return self.exceptions
@@ -126,7 +115,7 @@ class BasicBlocks:
 
         :param bb: the `DEXBasicBlock` to add
         """
-        self.bb.append(bb)
+        pass
 
     def pop(self, idx: int) -> DEXBasicBlock:
         """remove and return [DEXBasicBlock][androguard.core.analysis.analysis.DEXBasicBlock] at `idx`
@@ -223,14 +212,8 @@ class DEXBasicBlock:
     def get_notes(self) -> list[str]:
         return self.notes
 
-    def set_notes(self, value: str) -> None:
-        self.notes = [value]
 
-    def add_note(self, note: str) -> None:
-        self.notes.append(note)
 
-    def clear_notes(self) -> None:
-        self.notes = []
 
     def get_instructions(self) -> Iterator[dex.Instruction]:
         """
@@ -244,8 +227,6 @@ class DEXBasicBlock:
                 yield i
             idx += i.get_length()
 
-    def get_nb_instructions(self) -> int:
-        return self.nb_instructions
 
     def get_method(self) -> dex.EncodedMethod:
         """
@@ -280,7 +261,7 @@ class DEXBasicBlock:
 
         :returns: the last `androguard.core.dex.Instruction` in the basic block
         """
-        return list(self.get_instructions())[-1]
+        pass
 
     def get_next(self) -> DEXBasicBlock:
         """
@@ -288,7 +269,7 @@ class DEXBasicBlock:
 
         :returns: a list of the next `DEXBasicBlock` objects
         """
-        return self.childs
+        pass
 
     def get_prev(self) -> DEXBasicBlock:
         """
@@ -296,46 +277,11 @@ class DEXBasicBlock:
 
         :returns: a list of the previous `DEXBasicBlock` objects
         """
-        return self.fathers
+        pass
 
-    def set_fathers(self, f: DEXBasicBlock) -> None:
-        self.fathers.append(f)
 
-    def get_last_length(self) -> int:
-        return self.last_length
 
-    def set_childs(self, values: list[int]) -> None:
-        # print self, self.start, self.end, values
-        if not values:
-            next_block = self.context.get_basic_block(self.end + 1)
-            if next_block is not None:
-                self.childs.append(
-                    (self.end - self.get_last_length(), self.end, next_block)
-                )
-        else:
-            for i in values:
-                if i != -1:
-                    next_block = self.context.get_basic_block(i)
-                    if next_block is not None:
-                        self.childs.append(
-                            (self.end - self.get_last_length(), i, next_block)
-                        )
 
-        for c in self.childs:
-            if c[2] is not None:
-                c[2].set_fathers((c[1], c[0], self))
-
-    def push(self, i: DEXBasicBlock) -> None:
-        self.nb_instructions += 1
-        idx = self.end
-        self.last_length = i.get_length()
-        self.end += self.last_length
-
-        op_value = i.get_op_value()
-
-        if op_value == 0x26 or (0x2B <= op_value <= 0x2C):
-            code = self.method.get_code().get_bc()
-            self.special_ins[idx] = code.get_ins_off(idx + i.get_ref_off() * 2)
 
     def get_special_ins(self, idx: int) -> Union[dex.Instruction, None]:
         """
@@ -353,8 +299,6 @@ class DEXBasicBlock:
     def get_exception_analysis(self) -> Union[ExceptionAnalysis, None]:
         return self.exception_analysis
 
-    def set_exception_analysis(self, exception_analysis: ExceptionAnalysis):
-        self.exception_analysis = exception_analysis
 
     def show(self) -> None:
         print(
@@ -424,7 +368,7 @@ class MethodAnalysis:
 
         :returns: the name
         """
-        return self.method.get_name()
+        pass
 
     @property
     def descriptor(self) -> str:
@@ -432,7 +376,7 @@ class MethodAnalysis:
 
         :returns: the type descriptor
         """
-        return self.method.get_descriptor()
+        pass
 
     @property
     def access(self) -> str:
@@ -440,7 +384,7 @@ class MethodAnalysis:
 
         :returns: the access flags
         """
-        return self.method.get_access_flags_string()
+        pass
 
     @property
     def class_name(self) -> str:
@@ -448,7 +392,7 @@ class MethodAnalysis:
 
         :returns: the name of the class
         """
-        return self.method.class_name
+        pass
 
     @property
     def full_name(self) -> str:
@@ -456,7 +400,7 @@ class MethodAnalysis:
 
         :returns: the method full name
         """
-        return self.method.full_name
+        pass
 
     def get_class_name(self) -> str:
         """Return the class name of the method
@@ -480,75 +424,7 @@ class MethodAnalysis:
         Internal Method to create the basic block structure
         Parses all instructions and exceptions.
         """
-        current_basic = DEXBasicBlock(
-            0, self.__vm, self.method, self.basic_blocks
-        )
-        self.basic_blocks.push(current_basic)
-
-        l = []
-        h = dict()
-
-        logger.debug(
-            "Parsing instructions for method at @0x{:08x}".format(
-                self.method.get_code_off()
-            )
-        )
-        for idx, ins in self.method.get_instructions_idx():
-            if ins.get_op_value() in BasicOPCODES:
-                v = dex.determineNext(ins, idx, self.method)
-                h[idx] = v
-                l.extend(v)
-
-        logger.debug("Parsing exceptions")
-        excepts = dex.determineException(self.__vm, self.method)
-        for i in excepts:
-            l.extend([i[0]])
-            for handler in i[2:]:
-                l.append(handler[1])
-
-        logger.debug("Creating basic blocks")
-        for idx, ins in self.method.get_instructions_idx():
-            # index is a destination
-            if idx in l:
-                if current_basic.get_nb_instructions() != 0:
-                    current_basic = DEXBasicBlock(
-                        current_basic.get_end(),
-                        self.__vm,
-                        self.method,
-                        self.basic_blocks,
-                    )
-                    self.basic_blocks.push(current_basic)
-
-            current_basic.push(ins)
-
-            # index is a branch instruction
-            if idx in h:
-                current_basic = DEXBasicBlock(
-                    current_basic.get_end(),
-                    self.__vm,
-                    self.method,
-                    self.basic_blocks,
-                )
-                self.basic_blocks.push(current_basic)
-
-        if current_basic.get_nb_instructions() == 0:
-            self.basic_blocks.pop(-1)
-
-        logger.debug("Settings basic blocks childs")
-        for i in self.basic_blocks.get():
-            try:
-                i.set_childs(h[i.end - i.get_last_length()])
-            except KeyError:
-                i.set_childs([])
-
-        logger.debug("Creating exceptions")
-        self.exceptions.add(excepts, self.basic_blocks)
-
-        for i in self.basic_blocks.get():
-            # setup exception by basic block
-            i.set_exception_analysis(
-                self.exceptions.get_exception(i.start, i.end - 1)
-            )
+        pass
 
     def add_xref_read(
         self, classobj: ClassAnalysis, fieldobj: FieldAnalysis, offset: int
@@ -580,7 +456,7 @@ class MethodAnalysis:
 
         :returns: the `xrefread` list
         """
-        return self.xrefread
+        pass
 
     def get_xref_write(self) -> list[tuple[ClassAnalysis, FieldAnalysis, int]]:
         """
@@ -592,7 +468,7 @@ class MethodAnalysis:
 
         :returns: the `xrefwrite` list
         """
-        return self.xrefwrite
+        pass
 
     def add_xref_to(
         self, classobj: ClassAnalysis, methodobj: MethodAnalysis, offset: int
@@ -624,7 +500,7 @@ class MethodAnalysis:
 
         :returns: the `xreffrom` list
         """
-        return self.xreffrom
+        pass
 
     def get_xref_to(self) -> list[tuple[ClassAnalysis, MethodAnalysis, int]]:
         """
@@ -638,7 +514,7 @@ class MethodAnalysis:
 
         :returns: the `xrefto` list
         """
-        return self.xrefto
+        pass
 
     def add_xref_new_instance(
         self, classobj: ClassAnalysis, offset: int
@@ -660,7 +536,7 @@ class MethodAnalysis:
 
         :returns: the `xrefnewinstance` list
         """
-        return self.xrefnewinstance
+        pass
 
     def add_xref_const_class(
         self, classobj: ClassAnalysis, offset: int
@@ -681,7 +557,7 @@ class MethodAnalysis:
 
         :returns: the `xrefconstclass` list
         """
-        return self.xrefconstclass
+        pass
 
     def is_external(self) -> bool:
         """
@@ -700,35 +576,7 @@ class MethodAnalysis:
 
         :returns: `True` if the method seems to be an Android API method, else `False`
         """
-        if not self.is_external():
-            # Method must be external to be an API
-            return False
-
-        # Packages found at https://developer.android.com/reference/packages.html
-        api_candidates = [
-            "Landroid/",
-            "Lcom/android/internal/util",
-            "Ldalvik/",
-            "Ljava/",
-            "Ljavax/",
-            "Lorg/apache/",
-            "Lorg/json/",
-            "Lorg/w3c/dom/",
-            "Lorg/xml/sax",
-            "Lorg/xmlpull/v1/",
-            "Ljunit/",
-        ]
-
-        if self.apilist:
-            # FIXME: This will not work... need to introduce a name for lookup (like EncodedMethod.__str__ but without
-            # the offset! Such a name is also needed for the lookup in permissions
-            return self.method.get_name() in self.apilist
-        else:
-            for candidate in api_candidates:
-                if self.method.get_class_name().startswith(candidate):
-                    return True
-
-        return False
+        pass
 
     def get_basic_blocks(self) -> BasicBlocks:
         """
@@ -737,7 +585,7 @@ class MethodAnalysis:
 
         :returns: a `BasicBlocks` object
         """
-        return self.basic_blocks
+        pass
 
     def get_length(self) -> int:
         """
@@ -749,7 +597,7 @@ class MethodAnalysis:
         """
         :returns: the `dex.DEX` object
         """
-        return self.__vm
+        pass
 
     def get_method(self) -> dex.EncodedMethod:
         """
@@ -794,22 +642,6 @@ class MethodAnalysis:
         if not self.is_external():
             bytecode.PrettyShow(self.basic_blocks.gets(), self.method.notes)
 
-    def show_xrefs(self) -> None:
-        data = "XREFto for %s\n" % self.method
-        for ref_class, ref_method, offset in self.xrefto:
-            data += "in\n"
-            data += "{}:{} @0x{:x}\n".format(
-                ref_class.get_vm_class().get_name(), ref_method, offset
-            )
-
-        data += "XREFFrom for %s\n" % self.method
-        for ref_class, ref_method, offset in self.xreffrom:
-            data += "in\n"
-            data += "{}:{} @0x{:x}\n".format(
-                ref_class.get_vm_class().get_name(), ref_method, offset
-            )
-
-        return data
 
     def __repr__(self):
         return "<analysis.MethodAnalysis {}>".format(self.method)
@@ -856,9 +688,7 @@ class StringAnalysis:
         where the class is represented as a [ClassAnalysis][androguard.core.analysis.analysis.ClassAnalysis],
         while the method is a [MethodAnalysis][androguard.core.analysis.analysis.MethodAnalysis].
         """
-        if with_offset:
-            return self.xreffrom
-        return set(map(itemgetter(slice(0, 2)), self.xreffrom))
+        pass
 
     def set_value(self, value: str) -> None:
         """
@@ -867,7 +697,7 @@ class StringAnalysis:
 
         :param value: new string value
         """
-        self.value = value
+        pass
 
     def get_value(self) -> str:
         """
@@ -883,14 +713,14 @@ class StringAnalysis:
 
         :returns: the original value
         """
-        return self.orig_value
+        pass
 
     def is_overwritten(self) -> bool:
         """
         Returns `True` if the string was overwritten
         :returns: `True` if the string was overwritten, else `False`
         """
-        return self.orig_value != self.value
+        pass
 
     def __str__(self):
         data = "XREFto for string %s in\n" % repr(self.get_value())
@@ -927,9 +757,6 @@ class FieldAnalysis:
         self.xrefread = set()
         self.xrefwrite = set()
 
-    @property
-    def name(self) -> str:
-        return self.field.get_name()
 
     def add_xref_read(
         self, classobj: ClassAnalysis, methodobj: MethodAnalysis, offset: int
@@ -965,10 +792,7 @@ class FieldAnalysis:
 
         :returns: the `xrefread` list
         """
-        if with_offset:
-            return self.xrefread
-        # Legacy option, might be removed in the future
-        return set(map(itemgetter(slice(0, 2)), self.xrefread))
+        pass
 
     def get_xref_write(
         self, with_offset: bool = False
@@ -984,10 +808,7 @@ class FieldAnalysis:
 
         :returns: the `xrefwrite` list
         """
-        if with_offset:
-            return self.xrefwrite
-        # Legacy option, might be removed in the future
-        return set(map(itemgetter(slice(0, 2)), self.xrefwrite))
+        pass
 
     def get_field(self) -> dex.EncodedField:
         """
@@ -1106,13 +927,7 @@ class ExternalMethod:
 
         :returns: the formatted name
         """
-        return (
-            self.class_name
-            + " "
-            + self.name
-            + " "
-            + str(self.get_descriptor())
-        )
+        pass
 
     @property
     def permission_api_name(self) -> str:
@@ -1120,13 +935,7 @@ class ExternalMethod:
 
         :returns: the formatted name
         """
-        return (
-            self.class_name
-            + "-"
-            + self.name
-            + "-"
-            + str(self.get_descriptor())
-        )
+        pass
 
     def get_access_flags_string(self) -> str:
         """
@@ -1210,10 +1019,7 @@ class ClassAnalysis:
 
         :returns: a list of Interface names
         """
-        if self.is_external():
-            return []
-
-        return self.orig_class.get_interfaces()
+        pass
 
     @property
     def extends(self) -> str:
@@ -1224,10 +1030,7 @@ class ClassAnalysis:
 
         :returns: a string of the parent class name
         """
-        if self.is_external():
-            return "Ljava/lang/Object;"
-
-        return self.orig_class.get_superclassname()
+        pass
 
     @property
     def name(self) -> str:
@@ -1236,7 +1039,7 @@ class ClassAnalysis:
 
         :returns:
         """
-        return self.orig_class.get_name()
+        pass
 
     def is_external(self) -> bool:
         """
@@ -1256,34 +1059,7 @@ class ClassAnalysis:
 
         :returns: True if the class is an Andorid API class, else False.
         """
-
-        # Packages found at https://developer.android.com/reference/packages.html
-        api_candidates = [
-            "Landroid/",
-            "Lcom/android/internal/util",
-            "Ldalvik/",
-            "Ljava/",
-            "Ljavax/",
-            "Lorg/apache/",
-            "Lorg/json/",
-            "Lorg/w3c/dom/",
-            "Lorg/xml/sax",
-            "Lorg/xmlpull/v1/",
-            "Ljunit/",
-        ]
-
-        if not self.is_external():
-            # API must be external
-            return False
-
-        if self.apilist:
-            return self.orig_class.get_name() in self.apilist
-        else:
-            for candidate in api_candidates:
-                if self.orig_class.get_name().startswith(candidate):
-                    return True
-
-        return False
+        pass
 
     def get_methods(self) -> list[MethodAnalysis]:
         """
@@ -1308,7 +1084,7 @@ class ClassAnalysis:
 
         :returns: the number of methods
         """
-        return len(self._methods)
+        pass
 
     def get_method_analysis(self, method: dex.EncodedMethod) -> MethodAnalysis:
         """
@@ -1317,7 +1093,7 @@ class ClassAnalysis:
         :param method: the method to get a `MethodAnalysis` for
         :returns: the related `MethodAnalysis`
         """
-        return self._methods.get(method)
+        pass
 
     def get_field_analysis(self, field: dex.EncodedMethod) -> FieldAnalysis:
         """Return the [FieldAnalysis][androguard.core.analysis.analysis.FieldAnalysis] object for a given [EncodedMethod][androguard.core.dex.EncodedMethod]
@@ -1325,7 +1101,7 @@ class ClassAnalysis:
         :param field: the method to get a `FieldAnalysis` for
         :returns: the related `FieldAnalysis`
         """
-        return self._fields.get(field)
+        pass
 
     def add_field(self, field_analysis: FieldAnalysis) -> None:
         """
@@ -1488,7 +1264,7 @@ class ClassAnalysis:
 
         :returns: `xreffrom`, a dictionary of all classes calling the current class
         """
-        return self.xreffrom
+        pass
 
     def get_xref_to(
         self,
@@ -1516,7 +1292,7 @@ class ClassAnalysis:
 
         :returns: `xrefto`, a dictionary of all classes which are called by the current class
         """
-        return self.xrefto
+        pass
 
     def add_xref_new_instance(
         self, methobj: MethodAnalysis, offset: int
@@ -1542,7 +1318,7 @@ class ClassAnalysis:
 
         :returns: the list of tuples
         """
-        return self.xrefnewinstance
+        pass
 
     def add_xref_const_class(
         self, methobj: MethodAnalysis, offset: int
@@ -1566,7 +1342,7 @@ class ClassAnalysis:
 
         :returns: the list of tuples
         """
-        return self.xrefconstclass
+        pass
 
     def get_vm_class(self) -> Union[dex.ClassDefItem, ExternalClass]:
         """
@@ -1574,7 +1350,7 @@ class ClassAnalysis:
 
         :returns: the `dex.ClassDefItem` or `ExternalClass`
         """
-        return self.orig_class
+        pass
 
     def set_restriction_flag(
         self, flag: dex.HiddenApiClassDataItem.RestrictionApiFlag
@@ -1696,7 +1472,7 @@ class Analysis:
 
         :returns: iterator of `FieldAnalysis` objects
         """
-        return self.get_fields()
+        pass
 
     def add(self, vm: dex.DEX) -> None:
         """
@@ -2023,12 +1799,7 @@ class Analysis:
         :param method_descriptor: descriptor, for example `'(I I Ljava/lang/String)V'`
         :returns: `EncodedMethod` or None if method was not found
         """
-        m_a = self.get_method_analysis_by_name(
-            class_name, method_name, method_descriptor
-        )
-        if m_a and not m_a.is_external():
-            return m_a.get_method()
-        return None
+        pass
 
     def get_method_analysis_by_name(
         self, class_name: str, method_name: str, method_descriptor: str
@@ -2044,10 +1815,7 @@ class Analysis:
         :param method_descriptor: method descriptor, for example `'(I I)V'`
         :returns: `MethodAnalysis`
         """
-        m_hash = (class_name, method_name, method_descriptor)
-        if m_hash not in self.__method_hashes:
-            return None
-        return self.__method_hashes[m_hash]
+        pass
 
     def get_field_analysis(
         self, field: dex.EncodedField
@@ -2058,10 +1826,7 @@ class Analysis:
         :param field: the `EncodedField`
         :returns: the `FieldAnalysis`
         """
-        class_analysis = self.get_class_analysis(field.get_class_name())
-        if class_analysis:
-            return class_analysis.get_field_analysis(field)
-        return None
+        pass
 
     def is_class_present(self, class_name: str) -> bool:
         """
@@ -2079,7 +1844,7 @@ class Analysis:
         :param class_name: classname like `'Ljava/lang/Object;'` (including L and ;)
         :returns: `ClassAnalysis`
         """
-        return self.classes.get(class_name)
+        pass
 
     def get_external_classes(self) -> Iterator[ClassAnalysis]:
         """
@@ -2099,9 +1864,7 @@ class Analysis:
 
         :returns: the internal classes
         """
-        for cls in self.classes.values():
-            if not cls.is_external():
-                yield cls
+        pass
 
     def get_internal_methods(self) -> Iterator[MethodAnalysis]:
         """
@@ -2110,9 +1873,7 @@ class Analysis:
 
         :returns: the internal methods
         """
-        for m in self.methods.values():
-            if not m.is_external():
-                yield m
+        pass
 
     def get_external_methods(self) -> Iterator[MethodAnalysis]:
         """
@@ -2121,9 +1882,7 @@ class Analysis:
 
         :returns: the external methods
         """
-        for m in self.methods.values():
-            if m.is_external():
-                yield m
+        pass
 
     def get_strings_analysis(self) -> dict[str, StringAnalysis]:
         """
@@ -2182,11 +1941,7 @@ class Analysis:
         :param no_external: Remove external classes from the output (default False)
         :returns: generator of `ClassAnalysis` objects
         """
-        for cname, c in self.classes.items():
-            if no_external and isinstance(c.get_vm_class(), ExternalClass):
-                continue
-            if re.match(name, cname):
-                yield c
+        pass
 
     def find_methods(
         self,
@@ -2208,25 +1963,7 @@ class Analysis:
         :param no_external: Remove external method from the output (default False)
         :returns: generator of `MethodAnalysis` objects
         """
-        for cname, c in self.classes.items():
-            if re.match(classname, cname):
-                for m in c.get_methods():
-                    z = m.get_method()
-
-                    # TODO is it even possible that an internal class has
-                    # external methods? Maybe we should check for ExternalClass
-                    # instead...
-                    # Above: Yes, it is possible.  Internal classes that inherit from
-                    # an External class and call inherited methods will show as
-                    # external calls
-                    if no_external and isinstance(z, ExternalMethod):
-                        continue
-                    if (
-                        re.match(methodname, z.get_name())
-                        and re.match(descriptor, z.get_descriptor())
-                        and re.match(accessflags, z.get_access_flags_string())
-                    ):
-                        yield m
+        pass
 
     def find_strings(self, string: str = ".*") -> Iterator[StringAnalysis]:
         """
@@ -2235,9 +1972,7 @@ class Analysis:
         :param string: regular expression for the string to search for
         :returns: generator of `StringAnalysis` objects
         """
-        for s, sa in self.strings.items():
-            if re.match(string, s):
-                yield sa
+        pass
 
     def find_fields(
         self,
@@ -2255,16 +1990,7 @@ class Analysis:
         :param accessflags: regular expression of the access flags
         :returns: generator of `FieldAnalysis`
         """
-        for cname, c in self.classes.items():
-            if re.match(classname, cname):
-                for f in c.get_fields():
-                    z = f.get_field()
-                    if (
-                        re.match(fieldname, z.get_name())
-                        and re.match(fieldtype, z.get_descriptor())
-                        and re.match(accessflags, z.get_access_flags_string())
-                    ):
-                        yield f
+        pass
 
     def __repr__(self):
         return "<analysis.Analysis VMs: {}, Classes: {}, Methods: {}, Strings: {}>".format(
@@ -2300,64 +2026,7 @@ class Analysis:
 
         :returns: the `DiGraph` object
         """
-
-        def _add_node(G, method, _entry_points):
-            """
-            Wrapper to add methods to a graph
-            """
-            if method not in G:
-                if isinstance(method, ExternalMethod):
-                    is_external = True
-                else:
-                    is_external = False
-
-                if method.get_class_name() in _entry_points:
-                    is_entry_point = True
-                else:
-                    is_entry_point = False
-
-                G.add_node(
-                    method,
-                    external=is_external,
-                    entrypoint=is_entry_point,
-                    methodname=method.get_name(),
-                    descriptor=method.get_descriptor(),
-                    accessflags=method.get_access_flags_string(),
-                    classname=method.get_class_name(),
-                )
-
-        CG = nx.DiGraph()
-
-        # Note: If you create the CG from many classes at the same time, the drawing
-        # will be a total mess...
-        for m in self.find_methods(
-            classname=classname,
-            methodname=methodname,
-            descriptor=descriptor,
-            accessflags=accessflags,
-        ):
-
-            orig_method = m.get_method()
-            logger.info("Found Method --> {}".format(orig_method))
-
-            if no_isolated and len(m.get_xref_to()) == 0:
-                logger.info(
-                    "Skipped {}, because if has no xrefs".format(orig_method)
-                )
-                continue
-
-            _add_node(CG, orig_method, entry_points)
-
-            for callee_class, callee_method, offset in m.get_xref_to():
-                _add_node(CG, callee_method.method, entry_points)
-
-                # As this is a DiGraph and we are not interested in duplicate edges,
-                # check if the edge is already in the edge set.
-                # If you need all calls, you probably want to check out MultiDiGraph
-                if not CG.has_edge(orig_method, callee_method.method):
-                    CG.add_edge(orig_method, callee_method.method)
-
-        return CG
+        pass
 
     def create_ipython_exports(self) -> None:
         """
@@ -2376,46 +2045,7 @@ class Analysis:
         * Each `METHOD_` item will return a [MethodAnalysis][androguard.core.analysis.analysis.MethodAnalysis]
         * Each `FIELD_` item will return a [FieldAnalysis][androguard.core.analysis.analysis.FieldAnalysis]
         """
-        # TODO: it would be fun to have the classes organized like the packages. I.e. you could do dx.CLASS_xx.yyy.zzz
-        for cls in self.get_classes():
-            name = "CLASS_" + bytecode.FormatClassToPython(cls.name)
-            if hasattr(self, name):
-                logger.warning("Already existing class {}!".format(name))
-            setattr(self, name, cls)
-
-            for meth in cls.get_methods():
-                method_name = meth.name
-                if method_name in ["<init>", "<clinit>"]:
-                    _, method_name = bytecode.get_package_class_name(cls.name)
-
-                # FIXME this naming schema is not very good... but to describe a method uniquely, we need all of it
-                mname = (
-                    "METH_"
-                    + method_name
-                    + "_"
-                    + bytecode.FormatDescriptorToPython(meth.access)
-                    + "_"
-                    + bytecode.FormatDescriptorToPython(meth.descriptor)
-                )
-                if hasattr(cls, mname):
-                    logger.warning(
-                        "already existing method: {} at class {}".format(
-                            mname, name
-                        )
-                    )
-                setattr(cls, mname, meth)
-
-            # FIXME: syntetic classes produce problems here.
-            # If the field name is the same in the parent as in the syntetic one, we can only add one!
-            for field in cls.get_fields():
-                mname = "FIELD_" + bytecode.FormatNameToPython(field.name)
-                if hasattr(cls, mname):
-                    logger.warning(
-                        "already existing field: {} at class {}".format(
-                            mname, name
-                        )
-                    )
-                setattr(cls, mname, field)
+        pass
 
     def get_permissions(
         self, apilevel: Union[str, int, None] = None
@@ -2492,31 +2122,7 @@ class Analysis:
         :param apilevel: the requested API level or None for default
         :returns: yields `MethodAnalysis` objects for all using API methods
         """
-
-        # TODO maybe have the API level loading in the __init__ method and pass the APK as well?
-        permmap = load_api_specific_resource_module(
-            'api_permission_mappings', apilevel
-        )
-        if not permmap:
-            raise ValueError(
-                "No permission mapping found! Is one available? "
-                "The requested API level was '{}'".format(apilevel)
-            )
-
-        apis = {k for k, v in permmap.items() if permission in v}
-        if not apis:
-            raise ValueError(
-                "No API methods could be found which use the permission. "
-                "Does the permission exists? You requested: '{}'".format(
-                    permission
-                )
-            )
-
-        for cls in self.get_external_classes():
-            for meth_analysis in cls.get_methods():
-                meth = meth_analysis.get_method()
-                if meth.permission_api_name in apis:
-                    yield meth_analysis
+        pass
 
     def get_android_api_usage(self) -> Iterator[MethodAnalysis]:
         """
@@ -2524,11 +2130,7 @@ class Analysis:
 
         :returns: yields `MethodAnalysis` objects for all Android APIs methods
         """
-
-        for cls in self.get_external_classes():
-            for meth_analysis in cls.get_methods():
-                if meth_analysis.is_android_api():
-                    yield meth_analysis
+        pass
 
 
 def is_ascii_obfuscation(vm: dex.DEX) -> bool:
@@ -2539,10 +2141,4 @@ def is_ascii_obfuscation(vm: dex.DEX) -> bool:
     :param vm: `DEX`
     :returns: `True` if ascii obfuscation otherwise `False`
     """
-    for classe in vm.get_classes():
-        if is_ascii_problem(classe.get_name()):
-            return True
-        for method in classe.get_methods():
-            if is_ascii_problem(method.get_name()):
-                return True
-    return False
+    pass

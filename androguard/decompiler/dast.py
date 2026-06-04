@@ -656,11 +656,6 @@ class JSONWriter:
         if stmt is not None:
             sb[2].append(stmt)
 
-    @staticmethod
-    def statement_block():
-        # Create empty statement block (statements to be appended later)
-        # Note, the code below assumes this can be modified in place
-        return ['BlockStatement', None, []]
 
     @staticmethod
     def switch_stmt(cond_expr, ksv_pairs):

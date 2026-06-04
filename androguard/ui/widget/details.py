@@ -36,38 +36,10 @@ class DetailsFrame:
             height=Dimension(preferred=max_lines),
         )
 
-    @property
-    def activated(self) -> bool:
-        return self.container.activated
 
-    @activated.setter
-    def activated(self, value: bool):
-        self.container.activated = value
 
-    def update_content(self, _, offset=0):
-        self.offset = offset
-        self.container.body = self.get_content()
 
-    def get_content(self) -> AnyContainer:
-        return HSplit(
-            children=[
-                Window(
-                    ignore_content_height=True,
-                    content=FormattedTextControl(
-                        text=self.get_current_details()
-                    ),
-                ),
-            ]
-        )
 
-    def get_current_details(self):
-        if self.transactions.selection_valid():
-            return (
-                json.dumps(self.transactions.selected().params, indent=2)
-                + '\n'
-                + json.dumps(self.transactions.selected().ret_value, indent=2)
-            )
-        return ''
 
     def __pt_container__(self) -> AnyContainer:
         return self.container

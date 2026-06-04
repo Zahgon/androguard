@@ -40,16 +40,7 @@ class DummyControl(UIControl):
     define the filling.)
     """
 
-    def create_content(self, width: int, height: int) -> UIContent:
-        def get_line(i: int) -> StyleAndTextTuples:
-            return []
 
-        return UIContent(
-            get_line=get_line, line_count=100**100
-        )  # Something very big.
-
-    def is_focusable(self) -> bool:
-        return True
 
 
 class DynamicUI:
@@ -77,21 +68,7 @@ class DynamicUI:
 
         kb1 = KeyBindings()
 
-        @kb1.add('tab')
-        def _(event):
-            self.focus_index = (self.focus_index + 1) % len(self.focusable)
-            for i, f in enumerate(self.focusable):
-                f.activated = i == self.focus_index
 
-        @kb1.add('s-tab')
-        def _(event):
-            self.focus_index = (
-                len(self.focusable) - 1
-                if self.focus_index == 0
-                else self.focus_index - 1
-            )
-            for i, f in enumerate(self.focusable):
-                f.activated = i == self.focus_index
 
         dummy_control = DummyControl()
         main_layout = HSplit(
@@ -109,9 +86,6 @@ class DynamicUI:
             ],
         )
 
-        @Condition
-        def modal_panel_visible():
-            return show_help() or show_filters()
 
         @Condition
         def show_filters():
@@ -170,33 +144,9 @@ class DynamicUI:
 
         kb = KeyBindings()
 
-        @kb.add('q')
-        def _(event):
-            logger.info("Q pressed. App exiting.")
-            event.app.exit(exception=KeyboardInterrupt, style='class:aborting')
 
-        @kb.add('h', filter=~modal_panel_visible | show_help)
-        @kb.add("enter", filter=show_help)
-        def _(event):
-            self.help_panel.visible = not self.help_panel.visible
 
-        @kb.add('f', filter=~modal_panel_visible)
-        @kb.add("enter", filter=show_filters)
-        def _(event):
-            self.filter_panel.visible = not self.filter_panel.visible
-            if self.filter_panel.visible:
-                get_app().layout.focus(self.filter_panel.interface_textarea)
-            else:
-                self.filter = self.filter_panel.filter()
-                self.transactions.assign(
-                    [t for t in self.all_transactions if self.filter.passes(t)]
-                )
-                get_app().layout.focus(dummy_control)
 
-        @kb.add("c-c")
-        def _(event):
-            active_frame = self.focusable[self.focus_index]
-            active_frame.copy_to_clipboard()
 
         app = Application(
             layout,
@@ -215,32 +165,7 @@ class DynamicUI:
 
         app.run()
 
-    def check_resize(self, _):
-        new_dimensions = os.get_terminal_size()
-        if self.dimensions != new_dimensions:
-            self.resize_components(new_dimensions)
 
-    def resize_components(self, dimensions):
-        self.dimensions = dimensions
-        _, height = dimensions
-
-        # Allow for the borders:
-        # - top and bottom of transaction frame
-        # - top and bottom of lower frames
-        # - status bar
-        border_allowance = 5
-        available_height = height - border_allowance
-
-        # Split into two halfs horizontally. If there are an odd number of lines give the extra to transactions.
-        transactions_height = available_height - (available_height // 2)
-        lower_panels_height = available_height // 2
-
-        logger.debug(f"New terminal dimension: {dimensions}")
-        logger.debug(
-            f"{border_allowance=}, {transactions_height=}, {lower_panels_height=}, total={border_allowance+transactions_height+lower_panels_height}"
-        )
-
-        self.transaction_table.resize(transactions_height)
         # self.structure_pane.max_height = lower_panels_height
         # self.hexdump_pane.max_lines = lower_panels_height
 

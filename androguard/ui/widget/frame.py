@@ -44,11 +44,6 @@ class SelectableFrame:
         self.body = body
         self.activated = activated
 
-        def get_style() -> str:
-            if self.activated:
-                return "class:frame.border.selected"
-            else:
-                return "class:frame.border"
 
         fill = partial(Window, style=get_style)
         style = "class:frame " + style
@@ -81,9 +76,6 @@ class SelectableFrame:
             height=1,
         )
 
-        @Condition
-        def has_title() -> bool:
-            return bool(self.title)
 
         self.container = HSplit(
             [

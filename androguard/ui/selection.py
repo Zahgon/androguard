@@ -12,8 +12,6 @@ class View:
     start: int
     end: int
 
-    def size(self):
-        return self.end - self.start
 
 
 _T = TypeVar('_T')
@@ -48,25 +46,8 @@ class SelectionViewList(UserList[_T]):
                 self._update_view(step)
                 self.on_selection_change()
 
-    def selected(self):
-        if not self.selection_valid():
-            raise IndexError("Selection index not set.")
 
-        return self.data[self.selection]
 
-    def view_slice(self):
-        return self.data[self.view.start : self.view.end]
-
-    def resize_view(self, view_size):
-        if self.selection_valid():
-            before_selection = view_size // 2
-            self.view.start = max(0, self.selection - before_selection)
-            self.view.end = self.view.start
-            self.max_view_size = view_size
-            self._expand_view()
-        else:
-            self.max_view_size = view_size
-            self._reset_view()
 
     def _update_view(self, step: int):
         if step > 0 and self.view.end - self.selection < self.view_padding:

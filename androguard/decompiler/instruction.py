@@ -26,8 +26,6 @@ class IRForm:
     def is_call(self):
         return False
 
-    def is_cond(self):
-        return False
 
     def is_const(self):
         return False
@@ -41,8 +39,6 @@ class IRForm:
     def get_type(self):
         return self.type
 
-    def set_type(self, _type):
-        self.type = _type
 
     def has_side_effect(self):
         return False
@@ -1236,8 +1232,6 @@ class ConditionalExpression(IRForm):
     def get_lhs(self):
         return None
 
-    def is_cond(self):
-        return True
 
     def get_used_vars(self):
         v_m = self.var_map
@@ -1299,8 +1293,6 @@ class ConditionalZExpression(IRForm):
     def get_lhs(self):
         return None
 
-    def is_cond(self):
-        return True
 
     def get_used_vars(self):
         return self.var_map[self.arg].get_used_vars()

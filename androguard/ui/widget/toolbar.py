@@ -14,21 +14,7 @@ class StatusToolbar:
         self.filters = filters
         self.container = DynamicContainer(self.toolbar_container)
 
-    def toolbar_container(self) -> AnyContainer:
-        return FormattedTextToolbar(
-            text=self.toolbar_text(),
-            style="class:toolbar",
-        )
 
-    def toolbar_text(self) -> AnyFormattedText:
-        return FormattedText(
-            [
-                (
-                    "class:toolbar.text",
-                    f"Transactions: {len(self.transactions)}, Filter: {self.filters.filter()}",
-                )
-            ]
-        )
 
     def __pt_container__(self) -> AnyContainer:
         return self.container

@@ -107,20 +107,8 @@ TYPE_LEN = {
 }
 
 
-def get_access_class(access: int) -> list[str]:
-    sorted_access = [i for i in ACCESS_ORDER if i & access]
-    return [
-        ACCESS_FLAGS_CLASSES.get(flag, 'unkn_%d' % flag)
-        for flag in sorted_access
-    ]
 
 
-def get_access_method(access: int) -> list[str]:
-    sorted_access = [i for i in ACCESS_ORDER if i & access]
-    return [
-        ACCESS_FLAGS_METHODS.get(flag, 'unkn_%d' % flag)
-        for flag in sorted_access
-    ]
 
 
 def get_access_field(access: int) -> list[str]:
@@ -167,39 +155,14 @@ def merge_inner(clsdict):
     e.g class A { ... } class A$foo{ ... } class A$bar{ ... }
     ==> class A { class foo{...} class bar{...} ... }
     """
-    samelist = False
-    done = {}
-    while not samelist:
-        samelist = True
-        classlist = list(clsdict.keys())
-        for classname in classlist:
-            parts_name = classname.rsplit('$', 1)
-            if len(parts_name) > 1:
-                mainclass, innerclass = parts_name
-                innerclass = innerclass[:-1]  # remove ';' of the name
-                mainclass += ';'
-                if mainclass in clsdict:
-                    clsdict[mainclass].add_subclass(
-                        innerclass, clsdict[classname]
-                    )
-                    clsdict[classname].name = innerclass
-                    done[classname] = clsdict[classname]
-                    del clsdict[classname]
-                    samelist = False
-                elif mainclass in done:
-                    cls = done[mainclass]
-                    cls.add_subclass(innerclass, clsdict[classname])
-                    clsdict[classname].name = innerclass
-                    done[classname] = done[mainclass]
-                    del clsdict[classname]
-                    samelist = False
+    pass
 
 
 def get_type_size(param):
     """
     Return the number of register needed by the type @param
     """
-    return TYPE_LEN.get(param, 1)
+    pass
 
 
 def get_type(atype: str, size: int = None) -> str:
@@ -228,10 +191,7 @@ def get_params_type(descriptor: str) -> list[str]:
     """
     Return the parameters type of a descriptor (e.g (IC)V)
     """
-    params = descriptor.split(')')[0][1:].split()
-    if params:
-        return [param for param in params]
-    return []
+    pass
 
 
 def create_png(

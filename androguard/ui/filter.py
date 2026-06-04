@@ -44,8 +44,6 @@ class Filter:
         # return not matches ^ self.inclusive
         return False
 
-    def toggle_inclusivity(self):
-        self.inclusive = not self.inclusive
 
     def __str__(self):
         interface = self.interface or "*"

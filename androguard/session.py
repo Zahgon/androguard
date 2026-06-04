@@ -55,27 +55,12 @@ class Session:
         logger.info("Saving the database")
         self.db.commit()
 
-    def _setup_objects(self):
-        self.analyzed_files = collections.defaultdict(list)
-        self.analyzed_digest = dict()
-        self.analyzed_apk = dict()
-        self.added_files = []
-
-        # Stores Analysis Objects
-        # needs to be ordered to return the outermost element when searching for
-        # classes
-        self.analyzed_vms = collections.OrderedDict()
-
-        # Dict of digest and DEX/DalvikOdexFormat
-        # Actually not needed, as we have Analysis objects which store the DEX
-        # files as well, but we do not remove it here for legacy reasons
-        self.analyzed_dex = dict()
 
     def reset(self) -> None:
         """
         Reset the current session, delete all added files.
         """
-        self._setup_objects()
+        pass
 
     def isOpen(self) -> bool:
         """
@@ -102,27 +87,7 @@ class Session:
         for d, a in self.analyzed_vms.items():
             print("\t{}: {}".format(d, a))
 
-    def insert_event(self, call, callee, params, ret):
-        self.table_pentest.insert(
-            dict(
-                session_id=str(self.session_id),
-                call=call,
-                callee=callee,
-                params=params,
-                ret=ret,
-            )
-        )
 
-    def insert_system_event(self, call, callee, information, params):
-        self.table_system.insert(
-            dict(
-                session_id=str(self.session_id),
-                call=call,
-                callee=callee,
-                information=information,
-                params=params,
-            )
-        )
 
     def addAPK(self, filename: str, data: bytes) -> tuple[str, apk.APK]:
         """
@@ -347,7 +312,7 @@ class Session:
 
         :param current_class: A ClassDefItem
         """
-        return current_class.CM.vm
+        pass
 
     def get_filename_by_class(
         self, current_class: dex.ClassDefItem
@@ -362,10 +327,7 @@ class Session:
         :param current_class: `ClassDefItem`
         :returns: `None` if class was not found or the filename
         """
-        for digest, dx in self.analyzed_vms.items():
-            if dx.is_class_present(current_class.get_name()):
-                return self.analyzed_digest[digest]
-        return None
+        pass
 
     def get_digest_by_class(
         self, current_class: dex.ClassDefItem
@@ -377,10 +339,7 @@ class Session:
         For example, if you analyzed an APK, this should return the digest of
         the APK and not of the DEX file.
         """
-        for digest, dx in self.analyzed_vms.items():
-            if dx.is_class_present(current_class.get_name()):
-                return digest
-        return None
+        pass
 
     def get_strings(
         self,
@@ -405,14 +364,7 @@ class Session:
 
         :returns: the number of strings
         """
-        nb = 0
-        seen = []
-        for digest, dx in self.analyzed_vms.items():
-            if dx in seen:
-                continue
-            seen.append(dx)
-            nb += len(dx.get_strings_analysis())
-        return nb
+        pass
 
     def get_all_apks(self) -> Iterator[tuple[str, apk.APK]]:
         """
@@ -421,8 +373,7 @@ class Session:
 
         :returns: an iterator where each element is a tuple of sha256 of the APK, and the `APK` object
         """
-        for digest, a in self.analyzed_apk.items():
-            yield digest, a
+        pass
 
     def get_objects_apk(
         self,

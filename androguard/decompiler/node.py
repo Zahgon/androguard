@@ -19,20 +19,7 @@
 class MakeProperties(type):
     def __init__(cls, name, bases, dct):
 
-        def _wrap_set(names, name):
 
-            def fun(self, value):
-                for field in names:
-                    self.__dict__[field] = (name == field) and value
-
-            return fun
-
-        def _wrap_get(name):
-
-            def fun(self):
-                return self.__dict__[name]
-
-            return fun
 
         super().__init__(name, bases, dct)
         attrs = []

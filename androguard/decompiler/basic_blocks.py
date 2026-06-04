@@ -267,9 +267,6 @@ class TryBlock(BasicBlock):
         self.catch = []
 
     # FIXME:
-    @property
-    def num(self):
-        return self.try_start.num
 
     @num.setter
     def num(self, value):

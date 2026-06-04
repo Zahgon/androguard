@@ -81,13 +81,6 @@ class FiltersPanel:
             key_bindings=kb,
         )
 
-    def filter(self) -> Filter:
-
-        return Filter(
-            self.interface_textarea.text,
-            self.method_textarea.text,
-            self.type_filter_checkboxes.current_values,
-        )
 
     def __pt_container__(self) -> AnyContainer:
         return self.container
